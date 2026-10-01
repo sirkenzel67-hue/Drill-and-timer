@@ -1,62 +1,54 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function Timer() {
-  const [duration, setDuration] = useState(30);   // the configurable starting value
-  const [seconds, setSeconds] = useState(30);
-  const [running, setRunning] = useState(false);
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+export function Timer({ activeDrill, onComplete }) {
+  const [seconds, setSeconds] = useState(0);
   const intervalRef = useRef(null);
 
-  function start() {
-    setRunning(true);
+  useEffect(() => {
+    if (!activeDrill) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      setSeconds(0);
+      return;
+    }
+
+    const totalSeconds = activeDrill.duration * 60;
+    setSeconds(totalSeconds);
+
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
     intervalRef.current = setInterval(() => {
       setSeconds((prev) => {
         if (prev <= 1) {
           clearInterval(intervalRef.current);
-          setRunning(false);
+          intervalRef.current = null;
+          onComplete?.();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-  }
 
-  function stop() {
-    setRunning(false);
-    clearInterval(intervalRef.current);
-  }
-
-  function reset() {
-    stop();
-    setSeconds(duration);   // resets to whatever was configured, not a hardcoded 30
-  }
-
-  function handleDurationChange(e) {
-    const value = Number(e.target.value);
-    setDuration(value);
-    setSeconds(value);   // keep the display in sync while stopped
-  }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [activeDrill, onComplete]);
 
   return (
     <div className="timer">
-      <div className="duration-setting">
-        <label>Set time (seconds): </label>
-        <input
-          type="number"
-          min="1"
-          value={duration}
-          onChange={handleDurationChange}
-          disabled={running}
-        />
-      </div>
-
-      <h1>Timer: {seconds}s</h1>
-      <div className="timer-btns">
-        <button onClick={start} disabled={running}>Start</button>
-        <button onClick={stop} disabled={!running}>Stop</button>
-        <button onClick={reset}>Reset</button>
-      </div>
+      <h1>{formatTime(seconds)}</h1>
+      {activeDrill ? <p>Doing: {activeDrill.name}</p> : <p>Select a drill to begin.</p>}
     </div>
   );
 }
-
-export default Timer;

@@ -47,7 +47,7 @@ export default function AddDrillForm({ onAdd }) {
 
       <div>
         <input
-          placeholder="Duration (seconds)"
+          placeholder="Duration (minutes)"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
         />
